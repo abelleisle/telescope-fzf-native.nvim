@@ -2,7 +2,7 @@
 
 This is a stub mirror. The full source code for this commit is at:
 
-https://git.bitcicle.com/andy/telescope-fzf-native.nvim/src/commit/8ec164b541327202e5e74f99bcc5fe5845720e18
+https://git.bitcicle.com/andy/telescope-fzf-native.nvim/src/commit/281b07a5cba2dc255e2a35d3fa6e49af0c8cb37f
 
 To browse or clone the full repository, visit:
 
