@@ -1,11 +1,55 @@
 local ffi = require "ffi"
 
+local build_path = (function()
+  local build_dir = "build"
+  if string.match(package.path, "\\") then
+    build_dir = build_dir.."_win_"
+    build_dir = build_dir..os.getenv("PROCESSOR_ARCHITECTURE")
+  else
+    local sysf = io.popen("uname -p")
+    if sysf then
+      local arch = sysf:read("*a") or ""
+      build_dir = build_dir.."_"..arch
+      build_dir = string.gsub(build_dir, '^%s+', '')
+      build_dir = string.gsub(build_dir, '%s+$', '')
+      build_dir = string.gsub(build_dir, '[\n\r]+', ' ')
+      sysf:close()
+    end
+  end
+  return build_dir
+end)()
+
+local exists = function(file)
+   local ok, err, code = os.rename(file, file)
+   if not ok then
+      if code == 13 then
+         return true -- Permission denied, but it exists
+      end
+   end
+   return ok, err
+end
+
+local isdir = function(path)
+   -- "/" works on both Unix and Windows
+   return exists(path.."/")
+end
+
 local library_path = (function()
   local dirname = string.sub(debug.getinfo(1).source, 2, #"/fzf_lib.lua" * -1)
-  if package.config:sub(1, 1) == "\\" then
-    return dirname .. "../build/libfzf.dll"
+  local lib_path = dirname .. "../"
+  -- Check to see of arch specific build dir exists
+  if isdir(lib_path .. build_path) then
+    lib_path = lib_path .. build_path
+  -- If not, fall back to default build dir. Note: this can still not exist
   else
-    return dirname .. "../build/libfzf.so"
+    lib_path = lib_path .. "build"
+  end
+
+  -- Determine which library to load based on system
+  if package.config:sub(1, 1) == "\\" then
+    return lib_path .. "/libfzf.dll"
+  else
+    return lib_path .. "/libfzf.so"
   end
 end)()
 local native = ffi.load(library_path)
@@ -42,6 +86,8 @@ ffi.cdef [[
 ]]
 
 local fzf = {}
+
+fzf.build_path = build_path
 
 fzf.get_score = function(input, pattern_struct, slab)
   return native.fzf_get_score(input, pattern_struct, slab)
